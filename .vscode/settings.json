@@ -1,0 +1,19 @@
+{
+  "python.formatting.provider": "black",
+  "python.linting.enabled": true,
+  "editor.rulers": [88],
+  "editor.formatOnSave": true,
+  "python.formatting.blackArgs": ["--preview"],
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  },
+
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.markdownlint": true
+    }
+  },
+  "cSpell.words": ["ampel"]
+}

@@ -2,38 +2,21 @@ import time
 
 import RPi.GPIO as GPIO
 
-from ampel import energy_mix
-
-IS_TEST = False
-LOOP_TIME = 10
-
-GREEN_PIN = 17
-YELLOW_PIN = 27
-RED_PIN = 22
-
-LOWER_BORDER = 0.3
-UPPER_BORDER = 0.4
+from ampel import energy_mix, parameters
 
 TEST_COUNTER = 0
-
-URL = "https://thingspeak.umwelt-campus.de/channels/688"
-RANGE = 8
 
 
 def setup() -> None:
     """Sets up the GPIO pins"""
 
-    global RED_PIN
-    global YELLOW_PIN
-    global GREEN_PIN
-
     # set GPIO mode
     GPIO.setmode(GPIO.BCM)
 
     # set output pins
-    GPIO.setup(RED_PIN, GPIO.OUT)
-    GPIO.setup(YELLOW_PIN, GPIO.OUT)
-    GPIO.setup(GREEN_PIN, GPIO.OUT)
+    GPIO.setup(parameters.RED_PIN, GPIO.OUT)
+    GPIO.setup(parameters.YELLOW_PIN, GPIO.OUT)
+    GPIO.setup(parameters.GREEN_PIN, GPIO.OUT)
 
 
 def cleanup() -> None:
@@ -49,77 +32,83 @@ def determine_light(val_now, val_future) -> None:
 
     """
 
-    global RED_PIN
-    global YELLOW_PIN
-    global GREEN_PIN
-
-    if val_now > UPPER_BORDER and val_future > UPPER_BORDER:
+    if val_now > parameters.UPPER_THRESHOLD and val_future > parameters.UPPER_THRESHOLD:
         # current and future energy are both fully sustainable
-        GPIO.output(GREEN_PIN, 1)
-        GPIO.output(YELLOW_PIN, 0)
-        GPIO.output(RED_PIN, 0)
+        GPIO.output(parameters.GREEN_PIN, 1)
+        GPIO.output(parameters.YELLOW_PIN, 0)
+        GPIO.output(parameters.RED_PIN, 0)
     elif (
-        val_now > UPPER_BORDER
-        and val_future < UPPER_BORDER
-        and val_future > LOWER_BORDER
+        val_now > parameters.UPPER_THRESHOLD
+        and val_future < parameters.UPPER_THRESHOLD
+        and val_future > parameters.LOWER_THRESHOLD
     ):
         # current energy is fully sustainable but future energy is sustainable
-        GPIO.output(GREEN_PIN, 1)
-        GPIO.output(YELLOW_PIN, 0)
-        GPIO.output(RED_PIN, 0)
-    elif val_now > UPPER_BORDER and val_future < LOWER_BORDER:
-        # current energy is fully sustainable but future energy is not
-        GPIO.output(GREEN_PIN, 0)
-        GPIO.output(YELLOW_PIN, 1)
-        GPIO.output(RED_PIN, 0)
+        GPIO.output(parameters.GREEN_PIN, 1)
+        GPIO.output(parameters.YELLOW_PIN, 0)
+        GPIO.output(parameters.RED_PIN, 0)
     elif (
-        val_now < UPPER_BORDER and val_now > LOWER_BORDER and val_future > UPPER_BORDER
+        val_now > parameters.UPPER_THRESHOLD and val_future < parameters.LOWER_THRESHOLD
+    ):
+        # current energy is fully sustainable but future energy is not
+        GPIO.output(parameters.GREEN_PIN, 0)
+        GPIO.output(parameters.YELLOW_PIN, 1)
+        GPIO.output(parameters.RED_PIN, 0)
+    elif (
+        val_now < parameters.UPPER_THRESHOLD
+        and val_now > parameters.LOWER_THRESHOLD
+        and val_future > parameters.UPPER_THRESHOLD
     ):
         # current energy is sustainable but future energy is fully sustainable
-        GPIO.output(GREEN_PIN, 1)
-        GPIO.output(YELLOW_PIN, 0)
-        GPIO.output(RED_PIN, 0)
+        GPIO.output(parameters.GREEN_PIN, 1)
+        GPIO.output(parameters.YELLOW_PIN, 0)
+        GPIO.output(parameters.RED_PIN, 0)
     elif (
-        val_now < UPPER_BORDER
-        and val_now > LOWER_BORDER
-        and val_future < UPPER_BORDER
-        and val_future > LOWER_BORDER
+        val_now < parameters.UPPER_THRESHOLD
+        and val_now > parameters.LOWER_THRESHOLD
+        and val_future < parameters.UPPER_THRESHOLD
+        and val_future > parameters.LOWER_THRESHOLD
     ):
         # current energy is sustainable but future energy is also sustainable
-        GPIO.output(GREEN_PIN, 1)
-        GPIO.output(YELLOW_PIN, 1)
-        GPIO.output(RED_PIN, 0)
+        GPIO.output(parameters.GREEN_PIN, 1)
+        GPIO.output(parameters.YELLOW_PIN, 1)
+        GPIO.output(parameters.RED_PIN, 0)
     elif (
-        val_now < UPPER_BORDER and val_now > LOWER_BORDER and val_future < LOWER_BORDER
+        val_now < parameters.UPPER_THRESHOLD
+        and val_now > parameters.LOWER_THRESHOLD
+        and val_future < parameters.LOWER_THRESHOLD
     ):
         # current energy is sustainable but future energy is not
-        GPIO.output(GREEN_PIN, 0)
-        GPIO.output(YELLOW_PIN, 1)
-        GPIO.output(RED_PIN, 1)
-    elif val_now < LOWER_BORDER and val_future > UPPER_BORDER:
-        # current energy is not sustainable but future energy is fully sustainable
-        GPIO.output(GREEN_PIN, 0)
-        GPIO.output(YELLOW_PIN, 1)
-        GPIO.output(RED_PIN, 1)
+        GPIO.output(parameters.GREEN_PIN, 0)
+        GPIO.output(parameters.YELLOW_PIN, 1)
+        GPIO.output(parameters.RED_PIN, 1)
     elif (
-        val_now < LOWER_BORDER
-        and val_future < UPPER_BORDER
-        and val_future > LOWER_BORDER
+        val_now < parameters.LOWER_THRESHOLD and val_future > parameters.UPPER_THRESHOLD
+    ):
+        # current energy is not sustainable but future energy is fully sustainable
+        GPIO.output(parameters.GREEN_PIN, 0)
+        GPIO.output(parameters.YELLOW_PIN, 1)
+        GPIO.output(parameters.RED_PIN, 1)
+    elif (
+        val_now < parameters.LOWER_THRESHOLD
+        and val_future < parameters.UPPER_THRESHOLD
+        and val_future > parameters.LOWER_THRESHOLD
     ):
         # current energy is not sustainable but future energy is sustainable
-        GPIO.output(GREEN_PIN, 0)
-        GPIO.output(YELLOW_PIN, 1)
-        GPIO.output(RED_PIN, 1)
-    elif val_now < LOWER_BORDER and val_future < LOWER_BORDER:
+        GPIO.output(parameters.GREEN_PIN, 0)
+        GPIO.output(parameters.YELLOW_PIN, 1)
+        GPIO.output(parameters.RED_PIN, 1)
+    elif (
+        val_now < parameters.LOWER_THRESHOLD and val_future < parameters.LOWER_THRESHOLD
+    ):
         # current energy is not sustainable and future energy is not
-        GPIO.output(GREEN_PIN, 0)
-        GPIO.output(YELLOW_PIN, 0)
-        GPIO.output(RED_PIN, 1)
+        GPIO.output(parameters.GREEN_PIN, 0)
+        GPIO.output(parameters.YELLOW_PIN, 0)
+        GPIO.output(parameters.RED_PIN, 1)
     else:
         # something wrong
-        GPIO.output(GREEN_PIN, 1)
-        GPIO.output(YELLOW_PIN, 1)
-        GPIO.output(RED_PIN, 1)
+        GPIO.output(parameters.GREEN_PIN, 1)
+        GPIO.output(parameters.YELLOW_PIN, 1)
+        GPIO.output(parameters.RED_PIN, 1)
 
 
 def get_test_sustainability_values():
@@ -170,7 +159,7 @@ def main():
             future_val = get_sustainable_energy_distribution(2, IS_TEST, 1)
             print("in 2h: " + str(future_val))
             determine_light(current_val, future_val)
-            time.sleep(LOOP_TIME)  # set to 30 mins
+            time.sleep(LOOP_TIME)
     except KeyboardInterrupt:
         pass
 
@@ -178,21 +167,21 @@ def main():
 if __name__ == "__main__":
     setup()
 
-    GPIO.output(GREEN_PIN, True)
-    GPIO.output(YELLOW_PIN, True)
-    GPIO.output(RED_PIN, True)
+    GPIO.output(parameters.GREEN_PIN, True)
+    GPIO.output(parameters.YELLOW_PIN, True)
+    GPIO.output(parameters.RED_PIN, True)
 
     time.sleep(1)
 
-    GPIO.output(GREEN_PIN, False)
-    GPIO.output(YELLOW_PIN, False)
-    GPIO.output(RED_PIN, False)
+    GPIO.output(parameters.GREEN_PIN, False)
+    GPIO.output(parameters.YELLOW_PIN, False)
+    GPIO.output(parameters.RED_PIN, False)
 
     time.sleep(1)
 
-    GPIO.output(GREEN_PIN, True)
-    GPIO.output(YELLOW_PIN, True)
-    GPIO.output(RED_PIN, True)
+    GPIO.output(parameters.GREEN_PIN, True)
+    GPIO.output(parameters.YELLOW_PIN, True)
+    GPIO.output(parameters.RED_PIN, True)
 
     main()
     cleanup()

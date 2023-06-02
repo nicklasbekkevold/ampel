@@ -15,5 +15,5 @@
       "source.fixAll.markdownlint": true
     }
   },
-  "cSpell.words": ["ampel"]
+  "cSpell.words": ["ampel", "GPIO"]
 }
